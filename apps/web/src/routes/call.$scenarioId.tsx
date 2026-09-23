@@ -15,9 +15,7 @@ export function meta({ matches, location, params }: Route.MetaArgs) {
 	});
 }
 
-export const clientLoader = ({ params }: Route.ClientLoaderArgs) => {
-	requireAuth(`/auth?next=${encodeURIComponent(`/call/${params.scenarioId ?? ''}`)}`);
-
+export const clientLoader = () => {
 	return null;
 };
 clientLoader.hydrate = true as const;

@@ -60,43 +60,94 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 		return null;
 	}
 
-	const recognition = new Ctor();
-	recognition.lang = 'en-US';
-	recognition.continuous = false;
-	recognition.interimResults = true;
-	recognition.maxAlternatives = 1;
+	let recognition: RecognitionInstance | null = null;
+	let isRunning = false;
+	let isManualStop = false;
 
-	recognition.onresult = (event) => {
-		let interim = '';
+	const init = () => {
+		try {
+			recognition = new Ctor();
+			recognition.lang = 'en-US';
+			recognition.continuous = true;
+			recognition.interimResults = true;
+			recognition.maxAlternatives = 1;
 
-		for (let i = event.resultIndex; i < event.results.length; i += 1) {
-			const result = event.results[i];
+			recognition.onresult = (event) => {
+				let interim = '';
 
-			if (result.isFinal) {
-				handlers.onFinal(result[0].transcript);
-			} else {
-				interim += result[0].transcript;
-			}
-		}
+				for (let i = event.resultIndex; i < event.results.length; i += 1) {
+					const result = event.results[i];
 
-		if (interim) {
-			handlers.onInterim?.(interim);
+					if (result.isFinal) {
+						handlers.onFinal(result[0].transcript);
+					} else {
+						interim += result[0].transcript;
+					}
+				}
+
+				if (interim) {
+					handlers.onInterim?.(interim);
+				}
+			};
+
+			recognition.onerror = (event) => {
+				const err = event.error ?? 'unknown';
+				// 'no-speech' happens when user is quiet; safe to ignore
+				if (err === 'no-speech' || err === 'aborted') {
+					return;
+				}
+				handlers.onError?.(err);
+			};
+
+			recognition.onend = () => {
+				isRunning = false;
+				if (!isManualStop) {
+					handlers.onEnd?.();
+				}
+			};
+		} catch {
+			recognition = null;
 		}
 	};
 
-	recognition.onerror = event => handlers.onError?.(event.error ?? 'unknown');
-	recognition.onend = () => handlers.onEnd?.();
+	init();
 
 	return {
 		start: () => {
+			isManualStop = false;
+			if (!recognition) {
+				init();
+			}
+			if (!recognition || isRunning) return;
 			try {
+				isRunning = true;
 				recognition.start();
 			} catch {
-				// Already started — safe to ignore.
+				isRunning = false;
+				// If start threw because instance was already used/ended, recreate and start
+				init();
+				try {
+					isRunning = true;
+					recognition?.start();
+				} catch {
+					isRunning = false;
+				}
 			}
 		},
-		stop: () => recognition.stop(),
-		abort: () => recognition.abort(),
+		stop: () => {
+			isManualStop = true;
+			isRunning = false;
+			try {
+				recognition?.stop();
+			} catch {}
+		},
+		abort: () => {
+			isManualStop = true;
+			isRunning = false;
+			try {
+				recognition?.abort();
+			} catch {}
+		},
 	};
 }
 
@@ -177,7 +228,20 @@ export const pickVoice = (gender?: 'male' | 'female' | 'neutral'): SpeechSynthes
 	return english.find(voice => voice.lang === 'en-US') ?? english[0] ?? null;
 };
 
-/** Speaks one reply aloud; resolves when the voice finishes (or fails). */
+// Global pin to prevent garbage collection of active speech utterance mid-phrase
+let activeUtterance: SpeechSynthesisUtterance | null = null;
+let activeUtteranceTimer: number | null = null;
+let activeResumeInterval: number | null = null;
+
+export const unlockAudio = (): void => {
+	if (isSpeechSynthesisSupported()) {
+		try {
+			window.speechSynthesis.resume();
+		} catch {}
+	}
+};
+
+/** Speaks one reply aloud; resolves when the voice finishes (or safety timeout elapses). */
 export function speak(
 	text: string,
 	options: { rate?: number; pitch?: number; gender?: 'male' | 'female' | 'neutral' } = {}
@@ -185,31 +249,93 @@ export function speak(
 	return new Promise((resolve) => {
 		if (!isSpeechSynthesisSupported() || !text.trim()) {
 			resolve();
-
 			return;
 		}
 
 		const synth = window.speechSynthesis;
-		synth.cancel();
+
+		if (activeUtteranceTimer !== null) {
+			window.clearTimeout(activeUtteranceTimer);
+			activeUtteranceTimer = null;
+		}
+		if (activeResumeInterval !== null) {
+			window.clearInterval(activeResumeInterval);
+			activeResumeInterval = null;
+		}
+
+		try {
+			synth.cancel();
+		} catch {}
+
+		let settled = false;
+		const finish = () => {
+			if (settled) return;
+			settled = true;
+			if (activeUtteranceTimer !== null) {
+				window.clearTimeout(activeUtteranceTimer);
+				activeUtteranceTimer = null;
+			}
+			if (activeResumeInterval !== null) {
+				window.clearInterval(activeResumeInterval);
+				activeResumeInterval = null;
+			}
+			activeUtterance = null;
+			resolve();
+		};
 
 		const utterance = new SpeechSynthesisUtterance(text);
-		const voice = pickVoice(options.gender);
+		activeUtterance = utterance;
 
+		const voice = pickVoice(options.gender);
 		if (voice) {
 			utterance.voice = voice;
 		}
 
-		utterance.rate = options.rate ?? 1.02;
+		const rate = options.rate ?? 1.02;
+		utterance.rate = rate;
 		utterance.pitch = options.pitch ?? 1;
-		utterance.onend = () => resolve();
-		utterance.onerror = () => resolve();
 
-		synth.speak(utterance);
+		utterance.onend = () => finish();
+		utterance.onerror = () => finish();
+
+		// Safety timeout: ensure call state never hangs even if browser drops onend or autoplay blocked
+		const words = text.trim().split(/\s+/).length;
+		const maxDurationMs = Math.max(3000, Math.min(18000, (words / (rate * 2.2)) * 1000 + 2500));
+		activeUtteranceTimer = window.setTimeout(() => {
+			finish();
+		}, maxDurationMs);
+
+		// Chrome bug workaround: periodic resume every 5s while speaking
+		activeResumeInterval = window.setInterval(() => {
+			if (synth.speaking && synth.paused) {
+				try {
+					synth.resume();
+				} catch {}
+			}
+		}, 5000);
+
+		try {
+			synth.speak(utterance);
+			if (synth.paused) {
+				synth.resume();
+			}
+		} catch {
+			finish();
+		}
 	});
 }
 
 export const stopSpeaking = (): void => {
 	if (isSpeechSynthesisSupported()) {
+		if (activeUtteranceTimer !== null) {
+			window.clearTimeout(activeUtteranceTimer);
+			activeUtteranceTimer = null;
+		}
+		if (activeResumeInterval !== null) {
+			window.clearInterval(activeResumeInterval);
+			activeResumeInterval = null;
+		}
+		activeUtterance = null;
 		window.speechSynthesis.cancel();
 	}
 };

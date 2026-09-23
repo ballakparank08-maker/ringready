@@ -6,6 +6,7 @@ import {
 	Keyboard,
 	Mic,
 	MicOff,
+	Phone,
 	PhoneOff,
 	RotateCcw,
 	ScrollText,
@@ -23,8 +24,10 @@ import {
 	createRecognizer,
 	isSpeechRecognitionSupported,
 	isSpeechSynthesisSupported,
+	pickVoice,
 	speak,
 	stopSpeaking,
+	unlockAudio,
 } from '@/lib/speech';
 import type { RecognizerHandle } from '@/lib/speech';
 import { CallEvaluationView } from './call-evaluation-view';
@@ -135,6 +138,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 			return;
 		}
 
+		unlockAudio();
 		recognitionRef.current?.abort();
 
 		const handle = createRecognizer({
@@ -148,6 +152,18 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 					setMicBlocked(true);
 					setShowKeyboard(true);
 					setTurnState('idle');
+				} else {
+					// Benign error (like no-speech pause): cleanly restart listening
+					window.setTimeout(() => {
+						if (
+							stateRef.current.phase === 'active'
+							&& stateRef.current.turnState === 'listening'
+							&& !stateRef.current.muted
+							&& !stateRef.current.micBlocked
+						) {
+							startListening();
+						}
+					}, 250);
 				}
 			},
 			onEnd: () => {
@@ -159,8 +175,16 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 					&& !latest.muted
 					&& !latest.micBlocked
 				) {
-					// The browser stops listening after a pause — reopen the mic.
-					recognitionRef.current?.start();
+					// Reopen mic using fresh recognition session
+					window.setTimeout(() => {
+						if (
+							stateRef.current.phase === 'active'
+							&& stateRef.current.turnState === 'listening'
+							&& !stateRef.current.muted
+						) {
+							startListening();
+						}
+					}, 150);
 				}
 			},
 		});
@@ -187,6 +211,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 			return;
 		}
 
+		stopSpeaking();
 		recognitionRef.current?.abort();
 		setInterim('');
 		setError(null);
@@ -266,6 +291,8 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 	sendTurnRef.current = sendTurn;
 
 	const beginCall = useCallback(async () => {
+		unlockAudio();
+		stopSpeaking();
 		await clearChatHistory().catch(() => {});
 
 		if (!mountedRef.current) {
@@ -303,16 +330,24 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 		}
 	}, []);
 
+	const connectCall = useCallback(() => {
+		if (ringTimerRef.current !== null) {
+			window.clearTimeout(ringTimerRef.current);
+			ringTimerRef.current = null;
+		}
+		unlockAudio();
+		setPhase('active');
+		void beginCall();
+	}, [beginCall]);
+
 	const scheduleConnect = useCallback((delay: number) => {
 		ringTimerRef.current = window.setTimeout(() => {
 			if (!mountedRef.current) {
 				return;
 			}
-
-			setPhase('active');
-			void beginCall();
+			connectCall();
 		}, delay);
-	}, [beginCall]);
+	}, [connectCall]);
 
 	useEffect(() => {
 		if (phase === 'active') {
@@ -478,7 +513,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 		}
 
 		if (turnState === 'listening') {
-			return 'Listening — speak now';
+			return interim ? `Hearing: "${interim}"` : 'Listening — speak into your microphone';
 		}
 
 		if (micBlocked || !recognitionSupported) {
@@ -699,14 +734,33 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 							{/* live caption */}
 							<div className="mt-8 flex min-h-24 w-full items-center justify-center border border-border bg-card/70 px-6 py-5 text-center">
 								{turnState === 'listening' && interim ? (
-									<p className="font-display text-xl font-medium text-foreground">{interim}</p>
+									<div className="flex flex-col items-center gap-1.5">
+										<span className="font-mono text-[10px] tracking-widest text-primary uppercase animate-pulse">
+											● Hearing your voice…
+										</span>
+										<p className="font-display text-xl font-medium text-foreground">{interim}</p>
+									</div>
 								) : lastAssistantMessage?.content ? (
 									<p className="font-display text-xl leading-snug font-medium text-foreground text-balance">
 										{lastAssistantMessage.content}
 									</p>
+								) : phase === 'connecting' ? (
+									<div className="flex flex-col items-center gap-3 py-1">
+										<p className="font-mono text-xs tracking-wider text-muted-foreground uppercase animate-pulse">
+											Incoming Call…
+										</p>
+										<button
+											type="button"
+											onClick={connectCall}
+											className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-5 py-2 font-mono text-xs font-semibold tracking-wider text-primary-foreground uppercase shadow-gold transition-all hover:scale-105 active:scale-95"
+										>
+											<Phone className="h-3.5 w-3.5" />
+											Tap to Answer / Speak
+										</button>
+									</div>
 								) : (
 									<p className="text-sm text-muted-foreground">
-										{phase === 'connecting' ? 'The line is ringing…' : 'Say hello to begin.'}
+										Say hello to begin or speak into your microphone.
 									</p>
 								)}
 							</div>
@@ -768,7 +822,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 									/>
 									<button
 										type="submit"
-										disabled={turnState === 'thinking' || turnState === 'speaking'}
+										disabled={turnState === 'thinking'}
 										aria-label="Send"
 										className="flex h-12 w-12 shrink-0 items-center justify-center bg-primary text-primary-foreground transition-transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
 									>

@@ -30,4 +30,4 @@ How you speak:
  * With login required, ship a PocketBase sign-in flow in the same build, and
  * remember chat history only exists for signed-in visitors.
  */
-export const REQUIRE_LOGIN = true;
+export const REQUIRE_LOGIN = false;
