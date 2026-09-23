@@ -63,6 +63,26 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 	let recognition: RecognitionInstance | null = null;
 	let isRunning = false;
 	let isManualStop = false;
+	let accumulatedFinal = '';
+	let currentInterim = '';
+	let silenceTimer: number | null = null;
+
+	const clearSilenceTimer = () => {
+		if (silenceTimer !== null) {
+			window.clearTimeout(silenceTimer);
+			silenceTimer = null;
+		}
+	};
+
+	const flushTranscript = () => {
+		clearSilenceTimer();
+		const full = (accumulatedFinal + ' ' + currentInterim).trim();
+		if (full.length > 0) {
+			accumulatedFinal = '';
+			currentInterim = '';
+			handlers.onFinal(full);
+		}
+	};
 
 	const init = () => {
 		try {
@@ -73,20 +93,30 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 			recognition.maxAlternatives = 1;
 
 			recognition.onresult = (event) => {
-				let interim = '';
+				clearSilenceTimer();
+				let interimChunk = '';
 
 				for (let i = event.resultIndex; i < event.results.length; i += 1) {
 					const result = event.results[i];
+					const transcript = result[0]?.transcript ?? '';
 
 					if (result.isFinal) {
-						handlers.onFinal(result[0].transcript);
+						accumulatedFinal = (accumulatedFinal ? accumulatedFinal + ' ' : '') + transcript.trim();
 					} else {
-						interim += result[0].transcript;
+						interimChunk += transcript;
 					}
 				}
 
-				if (interim) {
-					handlers.onInterim?.(interim);
+				currentInterim = interimChunk;
+				const display = (accumulatedFinal + ' ' + currentInterim).trim();
+
+				if (display) {
+					handlers.onInterim?.(display);
+
+					// When user pauses speaking for 800ms, finalize and send to AI
+					silenceTimer = window.setTimeout(() => {
+						flushTranscript();
+					}, 800);
 				}
 			};
 
@@ -96,11 +126,15 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 				if (err === 'no-speech' || err === 'aborted') {
 					return;
 				}
+				// If there was spoken text before error, flush it
+				flushTranscript();
 				handlers.onError?.(err);
 			};
 
 			recognition.onend = () => {
 				isRunning = false;
+				// Flush any spoken words before restarting or ending
+				flushTranscript();
 				if (!isManualStop) {
 					handlers.onEnd?.();
 				}
@@ -115,6 +149,9 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 	return {
 		start: () => {
 			isManualStop = false;
+			clearSilenceTimer();
+			accumulatedFinal = '';
+			currentInterim = '';
 			if (!recognition) {
 				init();
 			}
@@ -124,7 +161,6 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 				recognition.start();
 			} catch {
 				isRunning = false;
-				// If start threw because instance was already used/ended, recreate and start
 				init();
 				try {
 					isRunning = true;
@@ -137,6 +173,7 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 		stop: () => {
 			isManualStop = true;
 			isRunning = false;
+			flushTranscript();
 			try {
 				recognition?.stop();
 			} catch {}
@@ -144,6 +181,9 @@ export function createRecognizer(handlers: RecognizerHandlers): RecognizerHandle
 		abort: () => {
 			isManualStop = true;
 			isRunning = false;
+			clearSilenceTimer();
+			accumulatedFinal = '';
+			currentInterim = '';
 			try {
 				recognition?.abort();
 			} catch {}

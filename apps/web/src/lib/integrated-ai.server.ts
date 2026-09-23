@@ -45,6 +45,9 @@ type StoredMessage = {
 const MESSAGES_COLLECTION = '_integratedAiMessages';
 const IMAGES_COLLECTION = '_integratedAiImages';
 
+// In-memory conversation state for guest/anonymous sessions
+const anonymousHistoryMap = new Map<string, HistoryMessage[]>();
+
 /** Turns beyond this are dropped from the prompt, oldest first. */
 const MAX_HISTORY_MESSAGES = 60;
 
@@ -101,7 +104,7 @@ const pocketbaseUrl = () => process.env.POCKETBASE_URL || 'http://localhost:8090
 
 /** Public origin for stored files: PocketBase is only reachable through the site's proxy. */
 const filesOrigin = () => {
-	const domain = process.env.WEBSITE_DOMAIN || 'localhost:3000';
+	const domain = process.env.WEBSITE_DOMAIN || 'localhost:3005';
 	const proto = domain.includes('localhost') || domain.includes('127.0.0.1') ? 'http' : 'https';
 
 	return `${proto}://${domain}/hcgi/platform`;
@@ -429,8 +432,9 @@ const generateSimulatedReply = (
 	const isBrenda = openingBrief.includes('brenda') || lower.includes('brenda');
 
 	// Initial call greeting / hidden brief
-	if (history.length === 0 || lower.includes('practice call brief') || lower.includes('never read this aloud')) {
-		if (lower.includes('stage 2') || lower.includes('leakage') || (history.length > 0 && isStage2)) {
+	const isOpeningBrief = lower.includes('practice call brief') || lower.includes('never read this aloud');
+	if (isOpeningBrief) {
+		if (lower.includes('stage 2') || lower.includes('leakage') || isStage2) {
 			return "Hello Officer TM. Yes, I'm ready. Thank you for following up on my case.";
 		}
 		if (isMarcus) {
@@ -708,8 +712,21 @@ export const streamAssistant = async ({
 		throw apiError(429, 'Too many messages, please try again in a minute');
 	}
 
+	const clientId = clientIdentifier(request);
 	const fileToken = await createFileToken();
-	const history = userId ? await getHistory(userId, fileToken) : [];
+
+	const userRawText = userMessage
+		.filter((b): b is Extract<ContentBlock, { type: 'text' }> => b.type === 'text')
+		.map(b => b.text)
+		.join('\n');
+	const isOpening = userRawText.toLowerCase().includes('practice call brief') || userRawText.toLowerCase().includes('[start_call]');
+	if (isOpening) {
+		anonymousHistoryMap.delete(clientId);
+	}
+
+	const history = userId
+		? await getHistory(userId, fileToken)
+		: (anonymousHistoryMap.get(clientId) ?? []);
 	const proxyEntranceId = process.env.PROXY_ENTRANCE_ID;
 
 	const apiUrl = process.env.INTEGRATED_AI_API_URL;
@@ -770,6 +787,25 @@ export const streamAssistant = async ({
 		const events = await parseEvents(historyStream);
 
 		if (!userId) {
+			const current = anonymousHistoryMap.get(clientId) ?? [];
+			const userText = userMessage
+				.filter((b): b is Extract<ContentBlock, { type: 'text' }> => b.type === 'text')
+				.map(b => b.text)
+				.join('\n');
+			const replyText = events
+				.filter(e => e.type === 'content' && typeof e.data.content === 'string')
+				.map(e => e.data.content)
+				.join('');
+
+			anonymousHistoryMap.set(
+				clientId,
+				[
+					...current,
+					{ role: 'user' as const, content: userText },
+					{ role: 'assistant' as const, content: replyText },
+				].slice(-MAX_HISTORY_MESSAGES)
+			);
+
 			return;
 		}
 

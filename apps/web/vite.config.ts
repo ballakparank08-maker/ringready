@@ -18,7 +18,7 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 export default defineConfig({
 	server: {
-		port: 3000,
+		port: 3005,
 		host: '0.0.0.0',
 		cors: true,
 		allowedHosts: true,
@@ -35,7 +35,7 @@ export default defineConfig({
 		},
 	},
 	preview: {
-		port: 3000,
+		port: 3005,
 		host: '0.0.0.0',
 		allowedHosts: true,
 		proxy: {

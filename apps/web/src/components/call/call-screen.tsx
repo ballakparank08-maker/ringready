@@ -96,7 +96,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 	useEffect(() => {
 		const supported = isSpeechRecognitionSupported();
 		setRecognitionSupported(supported);
-		setShowKeyboard(!supported);
+		setShowKeyboard(true);
 	}, []);
 
 	const handleCallError = useCallback((err: unknown) => {
@@ -389,6 +389,12 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 	}, [messages, interim, showTranscript]);
 
 	const toggleMute = () => {
+		if (micBlocked) {
+			setMicBlocked(false);
+			stateRef.current.micBlocked = false;
+			startListening();
+			return;
+		}
 		const next = !muted;
 		setMuted(next);
 		stateRef.current.muted = next;
@@ -734,16 +740,44 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 							{/* live caption */}
 							<div className="mt-8 flex min-h-24 w-full items-center justify-center border border-border bg-card/70 px-6 py-5 text-center">
 								{turnState === 'listening' && interim ? (
-									<div className="flex flex-col items-center gap-1.5">
+									<div className="flex flex-col items-center gap-2">
 										<span className="font-mono text-[10px] tracking-widest text-primary uppercase animate-pulse">
 											● Hearing your voice…
 										</span>
 										<p className="font-display text-xl font-medium text-foreground">{interim}</p>
+										<button
+											type="button"
+											onClick={() => {
+												recognitionRef.current?.stop();
+											}}
+											className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-primary/50 bg-primary/20 px-3.5 py-1 font-mono text-[11px] font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+										>
+											<Send className="h-3 w-3" />
+											Done Speaking (Send)
+										</button>
+									</div>
+								) : turnState === 'thinking' ? (
+									<div className="flex flex-col items-center gap-2 py-2">
+										<span className="font-mono text-xs tracking-widest text-primary uppercase animate-pulse">
+											● {activeVoice.name} is answering…
+										</span>
+										{lastAssistantMessage?.content ? (
+											<p className="font-display text-xl leading-snug font-medium text-foreground text-balance">
+												{lastAssistantMessage.content}
+											</p>
+										) : null}
 									</div>
 								) : lastAssistantMessage?.content ? (
-									<p className="font-display text-xl leading-snug font-medium text-foreground text-balance">
-										{lastAssistantMessage.content}
-									</p>
+									<div className="flex flex-col items-center gap-1.5">
+										{turnState === 'speaking' ? (
+											<span className="font-mono text-[10px] tracking-widest text-primary uppercase animate-pulse">
+												● {activeVoice.name} speaking…
+											</span>
+										) : null}
+										<p className="font-display text-xl leading-snug font-medium text-foreground text-balance">
+											{lastAssistantMessage.content}
+										</p>
+									</div>
 								) : phase === 'connecting' ? (
 									<div className="flex flex-col items-center gap-3 py-1">
 										<p className="font-mono text-xs tracking-wider text-muted-foreground uppercase animate-pulse">
