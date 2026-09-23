@@ -462,22 +462,22 @@ const generateSimulatedReply = (
 
 		// 6. Physical driver's license still in wallet?
 		if ((lower.includes('hold') || lower.includes('keep') || lower.includes('still have') || lower.includes('in your wallet')) && (lower.includes('physical') || lower.includes('license') || lower.includes('id') || lower.includes('driver'))) {
-			return "Yes, I still hold my physical driver's license right here in my wallet.";
+			return "Yes, I still hold my physical New York driver's license right here in my wallet, license number 842-190-337.";
 		}
 
 		// 7. Suspected persons or places (Choice 1 - Nothing)
 		if (lower.includes('suspect') || lower.includes('where the leak') || lower.includes('suspected persons')) {
-			return "No, I have no idea. I really don't suspect anyone or any specific place.";
+			return "No, I don't suspect any family or coworkers. I really have no idea who could have stolen my identity.";
 		}
 
 		// 8. Lost documents question (Branch B - Never lost)
 		if (lower.includes('lost') && (lower.includes('document') || lower.includes('wallet') || lower.includes('card') || lower.includes('ever'))) {
-			return "No, I have never lost any documents.";
+			return "No, I have never lost my wallet or any official documents.";
 		}
 
 		// 9. Other document usage (Branch C - rental car)
 		if (lower.includes('used elsewhere') || lower.includes('rental') || lower.includes('photocopy') || lower.includes('hotel') || lower.includes('other document')) {
-			return "Yes, I rented a car last month and the rental counter made a photocopy of my driver's license.";
+			return "Yes, I rented a car at Manhattan Car Rental on 11th Avenue on August 24th, and the clerk took a paper photocopy of my driver's license.";
 		}
 
 		// 10. Four SOP points (Organization, Reason, Signature, Date)
@@ -511,34 +511,54 @@ const generateSimulatedReply = (
 	// ==================== STAGE 1: IDENTITY THEFT INTAKE ====================
 
 	// 1. Specific Credit Card questions first to avoid generic keyword collisions:
-	// Q1: Card number / last four
-	if (lower.includes('card number') || lower.includes('last four') || lower.includes('last 4') || lower.includes('digits') || lower.includes('account number')) {
-		return "I only know the last four digits Citibank told me, which are 4471.";
+	// Q1: Card number / full number / digits
+	if (lower.includes('card number') || lower.includes('last four') || lower.includes('last 4') || lower.includes('digits') || lower.includes('account number') || lower.includes('what is the card') || lower.includes('credit card number')) {
+		return "The full credit card number on the fraudulent account is 5412 7521 8834 4471.";
 	}
 
 	// Q2: When and where application was made
-	if ((lower.includes('when') && (lower.includes('where') || lower.includes('applied') || lower.includes('application'))) || lower.includes('where was the application') || lower.includes('when was it applied')) {
-		return "I don't know. Citibank didn't tell me when or where the application was made.";
+	if ((lower.includes('when') && lower.includes('where')) || (lower.includes('when') && (lower.includes('applied') || lower.includes('application'))) || (lower.includes('where') && (lower.includes('applied') || lower.includes('application')))) {
+		return "Citibank told me the application was submitted online on September 12th, 2026, from an IP address in Queens, New York.";
+	}
+	if (lower.includes('when was') || lower.includes('what date') || (lower.includes('date') && lower.includes('applied')) || (lower.includes('time') && lower.includes('applied'))) {
+		return "Citibank confirmed the application was submitted on September 12th, 2026, at 3:15 PM.";
+	}
+	if (lower.includes('where was') || lower.includes('where did') || lower.includes('location of the application') || lower.includes('where was it applied')) {
+		return "Citibank said the application originated online from an IP address located in Queens, New York.";
 	}
 
 	// Q3: Which branch
-	if (lower.includes('branch') || lower.includes('location of the bank')) {
-		return "I don't know which branch issued the card.";
+	if (lower.includes('branch') || lower.includes('location of the bank') || lower.includes('which bank branch') || lower.includes('issuing branch')) {
+		return "Citibank said the card account was processed and issued through their Midtown Manhattan branch on 53rd Street.";
 	}
 
 	// Q4: Which website (must be checked before generic firearm mention)
-	if (lower.includes('website') || lower.includes('online store') || lower.includes('merchant site') || lower.includes('which site')) {
-		return "I don't know which website was used.";
+	if (lower.includes('website') || lower.includes('online store') || lower.includes('merchant site') || lower.includes('which site') || lower.includes('what website')) {
+		return "Citibank told me the unauthorized firearm purchases were made on the website GunBroker.com.";
 	}
 
 	// Q5: Transaction amount
 	if (lower.includes('amount') || lower.includes('dollar') || lower.includes('cost') || lower.includes('how much') || lower.includes('total') || lower.includes('price') || lower.includes('$')) {
-		return "Citibank mentioned the transaction amount was around $3,200, but I am not certain.";
+		return "The total fraudulent transaction amount charged for the four firearms was exactly $3,248.50.";
 	}
 
 	// Q6: Case or reference number
 	if (lower.includes('reference') || lower.includes('case number') || lower.includes('reference number') || lower.includes('citibank case')) {
-		return "Yes, Citibank gave me reference number C-88-2041.";
+		return "Yes, the Citibank fraud investigation case reference number is C-88-2041.";
+	}
+
+	// Demographic & contact details if asked
+	if (lower.includes('date of birth') || lower.includes('dob') || lower.includes('when were you born') || lower.includes('birthday')) {
+		return "My date of birth is April 15th, 1988.";
+	}
+	if (lower.includes('address') || lower.includes('where do you live') || lower.includes('home address') || lower.includes('residence')) {
+		return "My home address is 742 Evergreen Terrace, Apartment 4B, Brooklyn, New York 11201.";
+	}
+	if (lower.includes('phone') || lower.includes('telephone') || lower.includes('contact number') || lower.includes('mobile')) {
+		return "My phone number is 917-555-0194.";
+	}
+	if (lower.includes('social security') || lower.includes('ssn')) {
+		return "The last four digits of my Social Security Number are 6290.";
 	}
 
 	// 2. Full legal name

@@ -46,15 +46,13 @@ When the officer verifies these four facts one by one, confirm each clearly with
 
 Your full legal name: Jordan Hale. Give it when the officer asks for it for the record, and confirm the spelling if they repeat it back.
 
-The six credit-card questions — answer each only when asked:
-1. The credit card number: you only know the last four digits, 4471.
-2. When and where the application was made: you do not know.
-3. Which branch issued the card: you do not know.
-4. Which website was used: you do not know.
-5. The transaction amount for the firearms: Citibank mentioned around $3,200, but you are not certain.
-6. The Citibank case or reference number: Citibank gave you reference C-88-2041.
-
-If you do not know an answer, say so plainly — "I don't know" or "Citibank didn't tell me that."
+The six credit-card questions — answer each with full details when asked:
+1. The credit card number: give the full card number, 5412 7521 8834 4471.
+2. When and where the application was made: on September 12th, 2026, submitted online from an IP address in Queens, New York.
+3. Which branch issued the card: the Citibank Midtown Manhattan branch on 53rd Street.
+4. Which website was used: GunBroker.com for the unauthorized firearm purchases.
+5. The transaction amount for the firearms: the total transaction was exactly $3,248.50.
+6. The Citibank case or reference number: reference number C-88-2041.
 
 When the officer asks whether you have any other details, mention that you also noticed a hard inquiry on your credit report from a lender you do not recognize.
 

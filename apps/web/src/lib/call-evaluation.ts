@@ -230,8 +230,8 @@ function evaluateStage1(
 		{
 			id: 'stg1_q1_card_number',
 			category: 'Credit Card Investigation',
-			label: 'Q1: Card Number / Last 4 Digits',
-			description: 'Ask for the credit card number or last 4 digits (4471).',
+			label: 'Q1: Full Card Number',
+			description: 'Ask for the credit card number (5412 7521 8834 4471).',
 			completed: Boolean(
 				findEvidence(
 					(t) =>
@@ -239,7 +239,8 @@ function evaluateStage1(
 						t.includes('last four') ||
 						t.includes('last 4') ||
 						t.includes('digits') ||
-						t.includes('account number')
+						t.includes('account number') ||
+						t.includes('credit card')
 				)
 			),
 			evidence: findEvidence(
@@ -248,25 +249,28 @@ function evaluateStage1(
 					t.includes('last four') ||
 					t.includes('last 4') ||
 					t.includes('digits') ||
-					t.includes('account number')
+					t.includes('account number') ||
+					t.includes('credit card')
 			),
-			recommendation: 'Ask for the card number or the last 4 digits on the Citibank account.',
+			recommendation: 'Ask for the full credit card number on the fraudulent account.',
 		},
 		{
 			id: 'stg1_q2_when_where',
 			category: 'Credit Card Investigation',
 			label: 'Q2: When & Where Applied',
-			description: 'Inquire when and where the card application was submitted.',
+			description: 'Inquire when and where the card application was submitted (Sep 12, Queens, NY).',
 			completed: Boolean(
 				findEvidence(
 					(t) =>
 						(t.includes('when') && (t.includes('where') || t.includes('applied') || t.includes('application'))) ||
+						(t.includes('where') && (t.includes('applied') || t.includes('application'))) ||
 						t.includes('where was the application')
 				)
 			),
 			evidence: findEvidence(
 				(t) =>
 					(t.includes('when') && (t.includes('where') || t.includes('applied') || t.includes('application'))) ||
+					(t.includes('where') && (t.includes('applied') || t.includes('application'))) ||
 					t.includes('where was the application')
 			),
 			recommendation: 'Ask when and where the fraudulent application was made.',
@@ -275,7 +279,7 @@ function evaluateStage1(
 			id: 'stg1_q3_issuing_branch',
 			category: 'Credit Card Investigation',
 			label: 'Q3: Issuing Branch',
-			description: 'Ask which Citibank branch issued the credit card.',
+			description: 'Ask which Citibank branch issued the credit card (Midtown Manhattan on 53rd St).',
 			completed: Boolean(findEvidence((t) => t.includes('branch'))),
 			evidence: findEvidence((t) => t.includes('branch')),
 			recommendation: 'Ask which branch or banking location issued the card.',
@@ -284,13 +288,14 @@ function evaluateStage1(
 			id: 'stg1_q4_merchant_website',
 			category: 'Credit Card Investigation',
 			label: 'Q4: Website Used for Purchases',
-			description: 'Ask which website or merchant was used to buy the firearms.',
+			description: 'Ask which website or merchant was used to buy the firearms (GunBroker.com).',
 			completed: Boolean(
 				findEvidence(
 					(t) =>
 						t.includes('website') ||
 						t.includes('merchant') ||
 						t.includes('which site') ||
+						t.includes('what site') ||
 						t.includes('online store')
 				)
 			),
@@ -299,6 +304,7 @@ function evaluateStage1(
 					t.includes('website') ||
 					t.includes('merchant') ||
 					t.includes('which site') ||
+					t.includes('what site') ||
 					t.includes('online store')
 			),
 			recommendation: 'Inquire which specific website or merchant was used for the unauthorized purchases.',
@@ -307,7 +313,7 @@ function evaluateStage1(
 			id: 'stg1_q5_amount',
 			category: 'Credit Card Investigation',
 			label: 'Q5: Transaction Amount',
-			description: 'Ask for the total dollar amount of the transactions (~$3,200).',
+			description: 'Ask for the total dollar amount of the transactions ($3,248.50).',
 			completed: Boolean(
 				findEvidence(
 					(t) =>
