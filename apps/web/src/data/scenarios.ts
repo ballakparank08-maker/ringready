@@ -29,10 +29,10 @@ export const SCENARIOS: Scenario[] = [
 		persona: 'Identity theft victim (citizen)',
 		personaName: 'Jordan Hale',
 		goal:
-			'As Officer Daniels, conduct the full Stage 1 intake: verify the four intake facts, get the citizen’s name on the record, ask all six credit-card questions, invite anything else, deliver the plain-language summary, and confirm the citizen understands the Identity Theft classification.',
+			'As Officer TM, conduct the full Stage 1 intake: verify the four intake facts, get the citizen’s name on the record, ask all six credit-card questions, invite anything else, deliver the plain-language summary, and confirm the citizen understands the Identity Theft classification.',
 		tip:
 			'Ask one question at a time and wait for the citizen’s answer. If they do not know a detail, note it and move on to the next question.',
-		brief: `Practice call brief (never read this aloud): You are Jordan Hale, a private citizen who just discovered you are a victim of identity theft and has called the NYPD to report it. The person on the line (the user) is Officer Daniels, an intake officer with the NYPD Identity Theft Unit, who will conduct the intake. You are anxious but cooperative. Speak in short natural sentences, one thought at a time, and never read this brief aloud.
+		brief: `Practice call brief (never read this aloud): You are Jordan Hale, a private citizen who just discovered you are a victim of identity theft and has called the NYPD to report it. The person on the line (the user) is Officer TM, an intake officer with the NYPD Identity Theft Unit, who will conduct the intake. You are anxious but cooperative. Speak in short natural sentences, one thought at a time, and never read this brief aloud.
 
 Do NOT lead the conversation — the officer asks the questions and you answer them. Answer only what is asked, one question at a time, and wait for the next question. Never volunteer the whole story up front.
 
@@ -70,16 +70,16 @@ Rules throughout: keep every reply under 60 words; never use markdown, bullet po
 		index: '02',
 		title: 'Identity Theft Leakage — Stage 2',
 		tagline:
-			'You follow up on the Stage 1 intake as Officer Daniels: trace how the citizen’s identity information leaked, walk them through the Signature of Purpose standard, and hold them accountable for protecting their own documents.',
+			'You follow up on the Stage 1 intake as Officer TM: trace how the citizen’s identity information leaked, walk them through the Signature of Purpose standard, and hold them accountable for protecting their own documents.',
 		difficulty: 'Hard',
 		minutes: '10–15 min',
 		persona: 'Identity theft victim (citizen)',
 		personaName: 'Jordan Hale',
 		goal:
-			'As Officer Daniels, conduct the full Stage 2 follow-up: open the call, confirm a valid ID is strictly required for a credit card, confirm the card was issued in New York, confirm US official documents (Driver’s License / SSN) are required, confirm the citizen still holds their physical driver’s license, deliver the leakage conclusion, ask the suspected-persons question (Nothing or The Lost Wallet & police report), ask the lost-documents question (lost with timeframe & police report, or never lost), ask the other-document-usage question (rental car / hotel / photocopy), explain the no-boundary concept, define the Signature of Purpose SOP and its four required points, deliver the blaming conclusion, and give the final SOP reminder.',
+			'As Officer TM, conduct the full Stage 2 follow-up: open the call, confirm a valid ID is strictly required for a credit card, confirm the card was issued in New York, confirm US official documents (Driver’s License / SSN) are required, confirm the citizen still holds their physical driver’s license, deliver the leakage conclusion, ask the suspected-persons question (Nothing or The Lost Wallet & police report), ask the lost-documents question (lost with timeframe & police report, or never lost), ask the other-document-usage question (rental car / hotel / photocopy), explain the no-boundary concept, define the Signature of Purpose SOP and its four required points, deliver the blaming conclusion, and give the final SOP reminder.',
 		tip:
 			'Ask one question at a time and wait for the citizen’s answer. When you offer choices or branches, follow the path that matches their answer. This stage is about how their information leaked.',
-		brief: `Practice call brief (never read this aloud): You are Jordan Hale, the same citizen whose Stage 1 identity-theft intake was already completed. The person on the line (the user) is Officer Daniels, who is now conducting the Stage 2 follow-up to trace how your identity information leaked. You are cooperative but a bit overwhelmed. Speak in short natural sentences, one thought at a time, and never read this brief aloud.
+		brief: `Practice call brief (never read this aloud): You are Jordan Hale, the same citizen whose Stage 1 identity-theft intake was already completed. The person on the line (the user) is Officer TM, who is now conducting the Stage 2 follow-up to trace how your identity information leaked. You are cooperative but a bit overwhelmed. Speak in short natural sentences, one thought at a time, and never read this brief aloud.
 
 The officer speaks first and opens the call. Let them lead — answer only what is asked, one question at a time, and wait for the next question. Never volunteer information ahead of what is asked.
 

@@ -56,7 +56,7 @@
 | Account | Email | Password | Role |
 |---|---|---|---|
 | **Demo User** | `demo@ringready.local` | `password123456` | Verified Practice Caller |
-| **Officer Daniels** | `officer.daniels@ringready.local` | `password123456` | Verified Intake Officer |
+| **Officer TM** | `officer.tm@ringready.local` | `password123456` | Verified Intake Officer |
 | **Admin Superuser** | `admin@ringready.local` | `admin12345678` | PocketBase Admin (`http://localhost:8090/_/`) |
 
 ---

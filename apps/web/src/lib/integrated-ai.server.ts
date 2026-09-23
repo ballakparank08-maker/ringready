@@ -428,9 +428,9 @@ const generateSimulatedReply = (
 	// Initial call greeting / hidden brief
 	if (history.length === 0 || lower.includes('practice call brief') || lower.includes('never read this aloud')) {
 		if (lower.includes('stage 2') || lower.includes('leakage') || (history.length > 0 && isStage2)) {
-			return "Hello Officer Daniels. Yes, I'm ready. Thank you for following up on my case.";
+			return "Hello Officer TM. Yes, I'm ready. Thank you for following up on my case.";
 		}
-		return "Hello? Officer Daniels? Yes, thank you for taking my call. I'm Jordan Hale. Citibank called to say an account was opened in my name and used to buy guns, and I don't know what to do.";
+		return "Hello? Officer TM? Yes, thank you for taking my call. I'm Jordan Hale. Citibank called to say an account was opened in my name and used to buy guns, and I don't know what to do.";
 	}
 
 	// ==================== STAGE 2: IDENTITY THEFT LEAKAGE ====================
@@ -497,15 +497,15 @@ const generateSimulatedReply = (
 
 		// 13. Final reminder to comply with SOP
 		if (lower.includes('future') || lower.includes('comply') || lower.includes('remember to') || lower.includes('final reminder')) {
-			return "Yes, Officer Daniels. I will strictly follow the Signature of Purpose for every document copy going forward.";
+			return "Yes, Officer TM. I will strictly follow the Signature of Purpose for every document copy going forward.";
 		}
 
 		// 14. Closing the call
 		if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('conclude') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye')) {
-			return "Thank you so much for explaining this, Officer Daniels. Goodbye.";
+			return "Thank you so much for explaining this, Officer TM. Goodbye.";
 		}
 
-		return "Yes, Officer Daniels. What else do you need to trace how my information leaked?";
+		return "Yes, Officer TM. What else do you need to trace how my information leaked?";
 	}
 
 	// ==================== STAGE 1: IDENTITY THEFT INTAKE ====================
@@ -578,16 +578,16 @@ const generateSimulatedReply = (
 
 	// 8. Plain-language summary & classification confirmation
 	if (lower.includes('identity theft') || lower.includes('summary') || lower.includes('classify') || lower.includes('understand this')) {
-		return "Yes, Officer Daniels, I understand completely. It is an Identity Theft report. What should my next step be?";
+		return "Yes, Officer TM, I understand completely. It is an Identity Theft report. What should my next step be?";
 	}
 
 	// 9. Closing the call / goodbye
 	if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('intake is done') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye') || lower.includes('wrap up')) {
-		return "Thank you so much for your help and taking my report, Officer Daniels. Goodbye.";
+		return "Thank you so much for your help and taking my report, Officer TM. Goodbye.";
 	}
 
 	// Default fallback in character
-	return "Yes Officer Daniels, I'm listening. Could you let me know what detail you need next for the report?";
+	return "Yes Officer TM, I'm listening. Could you let me know what detail you need next for the report?";
 };
 
 /**

@@ -25,6 +25,9 @@ import {
 	stopSpeaking,
 } from '@/lib/speech';
 import type { RecognizerHandle } from '@/lib/speech';
+import { CallEvaluationView } from './call-evaluation-view';
+import { createAudioRecorder, isAudioRecordingSupported } from '@/lib/audio-recorder';
+import type { AudioRecorderController, RecordingResult } from '@/lib/audio-recorder';
 
 type CallPhase = 'connecting' | 'active' | 'ended';
 type TurnState = 'idle' | 'listening' | 'thinking' | 'speaking';
@@ -65,11 +68,17 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 	const [verifyResend, setVerifyResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 	const [recognitionSupported, setRecognitionSupported] = useState(false);
 
+	const [recordingResult, setRecordingResult] = useState<RecordingResult | null>(null);
+	const [isRecording, setIsRecording] = useState(false);
+	const [recordingSeconds, setRecordingSeconds] = useState(0);
+	const [recordingAudioLevel, setRecordingAudioLevel] = useState(0);
+
 	const mountedRef = useRef(true);
 	const recognitionRef = useRef<RecognizerHandle | null>(null);
 	const abortRef = useRef<AbortController | null>(null);
 	const ringTimerRef = useRef<number | null>(null);
 	const transcriptEndRef = useRef<HTMLDivElement | null>(null);
+	const recorderRef = useRef<AudioRecorderController | null>(null);
 	const stateRef = useRef({ phase, turnState, muted, speakerOn, micBlocked });
 	stateRef.current = { phase, turnState, muted, speakerOn, micBlocked };
 
@@ -254,6 +263,34 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 		await sendTurnRef.current(scenario.brief, { hidden: true });
 	}, [scenario.brief]);
 
+	const startRecording = useCallback(async () => {
+		if (!isAudioRecordingSupported()) return;
+		try {
+			recorderRef.current?.cleanup();
+			const rec = createAudioRecorder({
+				onTick: (sec) => setRecordingSeconds(sec),
+				onLevel: (lvl) => setRecordingAudioLevel(lvl),
+			});
+			recorderRef.current = rec;
+			await rec.start();
+			setIsRecording(true);
+		} catch (err) {
+			console.warn('Audio recording failed to start:', err);
+			setIsRecording(false);
+		}
+	}, []);
+
+	const toggleRecording = useCallback(() => {
+		if (!recorderRef.current) return;
+		if (recorderRef.current.isPaused()) {
+			recorderRef.current.resume();
+			setIsRecording(true);
+		} else if (recorderRef.current.isRecording()) {
+			recorderRef.current.pause();
+			setIsRecording(false);
+		}
+	}, []);
+
 	const scheduleConnect = useCallback((delay: number) => {
 		ringTimerRef.current = window.setTimeout(() => {
 			if (!mountedRef.current) {
@@ -264,6 +301,12 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 			void beginCall();
 		}, delay);
 	}, [beginCall]);
+
+	useEffect(() => {
+		if (phase === 'active') {
+			void startRecording();
+		}
+	}, [phase, startRecording]);
 
 	useEffect(() => {
 		mountedRef.current = true;
@@ -280,6 +323,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 			abortRef.current?.abort();
 			recognitionRef.current?.abort();
 			stopSpeaking();
+			recorderRef.current?.cleanup();
 		};
 	}, [scheduleConnect]);
 
@@ -329,16 +373,34 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 		}
 	};
 
-	const endCall = () => {
+	const endCall = async () => {
 		abortRef.current?.abort();
 		recognitionRef.current?.abort();
 		stopSpeaking();
 		setInterim('');
 		setTurnState('idle');
+
+		let recResult: RecordingResult | null = null;
+		if (recorderRef.current) {
+			try {
+				recResult = await recorderRef.current.stop();
+			} catch (e) {
+				console.error('Failed to stop recording:', e);
+			}
+		}
+		setRecordingResult(recResult);
+		setIsRecording(false);
 		setPhase('ended');
 	};
 
 	const callAgain = () => {
+		if (recordingResult?.url) {
+			URL.revokeObjectURL(recordingResult.url);
+		}
+		setRecordingResult(null);
+		setIsRecording(false);
+		setRecordingSeconds(0);
+		setRecordingAudioLevel(0);
 		setMessages([]);
 		setSeconds(0);
 		setError(null);
@@ -435,7 +497,34 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 					<p className="font-display text-sm font-semibold tracking-tight">{scenario.title}</p>
 					<p className="font-mono text-[11px] text-muted-foreground">{scenario.persona}</p>
 				</div>
-				<span className="font-mono text-sm text-primary tabular-nums">{formatDuration(seconds)}</span>
+				<div className="flex items-center gap-3">
+					{phase === 'active' ? (
+						<button
+							type="button"
+							onClick={toggleRecording}
+							title={isRecording ? 'Click to pause audio recording' : 'Click to resume audio recording'}
+							className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] tracking-wider transition-colors ${
+								isRecording
+									? 'border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20'
+									: 'border-border bg-card text-muted-foreground hover:text-foreground'
+							}`}
+						>
+							<span className="relative flex h-2 w-2">
+								{isRecording ? (
+									<>
+										<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+										<span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+									</>
+								) : (
+									<span className="h-2 w-2 rounded-full bg-muted-foreground" />
+								)}
+							</span>
+							<span className="font-semibold uppercase">{isRecording ? 'REC' : 'PAUSED'}</span>
+							<span className="tabular-nums">{formatDuration(recordingSeconds)}</span>
+						</button>
+					) : null}
+					<span className="font-mono text-sm text-primary tabular-nums">{formatDuration(seconds)}</span>
+				</div>
 			</header>
 
 			<div className="flex flex-1">
@@ -463,52 +552,13 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 					<div aria-hidden className="absolute -top-24 -right-24 h-72 w-72 rotate-6 bg-accent/40" />
 
 					{phase === 'ended' ? (
-						<div className="relative w-full max-w-lg animate-fade-up">
-							<div className="border border-primary/30 bg-card p-8 shadow-gold-deep">
-								<p className="font-mono text-[11px] tracking-[0.3em] text-primary uppercase">Call ended</p>
-								<h1 className="mt-4 font-display text-4xl font-bold tracking-tight">Nice reps.</h1>
-								<div className="mt-6 grid grid-cols-2 gap-px border border-border bg-border">
-									<div className="bg-background p-4">
-										<p className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Duration</p>
-										<p className="mt-1 font-display text-2xl font-semibold tabular-nums">{formatDuration(seconds)}</p>
-									</div>
-									<div className="bg-background p-4">
-										<p className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Your turns</p>
-										<p className="mt-1 font-display text-2xl font-semibold tabular-nums">{exchanges}</p>
-									</div>
-								</div>
-
-								{messages.length > 0 ? (
-									<div className="mt-6 max-h-56 overflow-y-auto border border-border bg-background p-4">
-										{messages.map((message, index) => (
-											<p key={index} className="mb-3 text-sm leading-relaxed last:mb-0">
-												<span className="font-mono text-[10px] tracking-widest text-primary uppercase">
-													{message.role === 'assistant' ? `${scenario.personaName}: ` : 'You: '}
-												</span>
-												<span className="text-muted-foreground">{message.content}</span>
-											</p>
-										))}
-									</div>
-								) : null}
-
-								<div className="mt-8 flex flex-col gap-3 sm:flex-row">
-									<button
-										type="button"
-										onClick={callAgain}
-										className="flex h-12 flex-1 items-center justify-center gap-2 bg-primary font-mono text-sm font-semibold tracking-widest text-primary-foreground uppercase transition-transform hover:-translate-y-0.5 active:translate-y-0"
-									>
-										<RotateCcw className="h-4 w-4" />
-										Call again
-									</button>
-									<Link
-										to="/"
-										className="flex h-12 flex-1 items-center justify-center border border-border font-mono text-sm tracking-widest uppercase transition-colors hover:border-primary hover:text-primary"
-									>
-										New scenario
-									</Link>
-								</div>
-							</div>
-						</div>
+						<CallEvaluationView
+							scenario={scenario}
+							messages={messages}
+							durationSeconds={seconds}
+							recordingResult={recordingResult}
+							onCallAgain={callAgain}
+						/>
 					) : (
 						<div className="relative flex w-full max-w-xl flex-col items-center">
 							{/* persona avatar with pulse rings */}
