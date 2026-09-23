@@ -56,7 +56,7 @@ export const MAX_MESSAGE_BYTES = 256 * 1024;
 
 /** Model calls are the expensive endpoint, so they get a tighter budget than `/api/*` at large. */
 const ASSISTANT_WINDOW_SECONDS = 60;
-const ASSISTANT_MAX_REQUESTS = 10;
+const ASSISTANT_MAX_REQUESTS = 100;
 
 /** Kept in history because the transcript has to read back the way it streamed. */
 const HISTORY_EVENT_TYPES = new Set(['reasoning', 'content', 'tool_use', 'tool_result', 'error']);
@@ -418,74 +418,176 @@ const generateSimulatedReply = (
 ): string => {
 	const lower = userText.toLowerCase();
 
+	// Determine scenario from the call's opening brief (the initial turn in history)
+	const openingBrief = history.find(m => m.role === 'user' && m.content.toLowerCase().includes('practice call brief'))?.content?.toLowerCase()
+		|| (history[0]?.content?.toLowerCase() ?? '')
+		|| lower;
+
+	const isStage2 = openingBrief.includes('stage 2') || openingBrief.includes('leakage');
+
+	// Initial call greeting / hidden brief
 	if (history.length === 0 || lower.includes('practice call brief') || lower.includes('never read this aloud')) {
-		if (lower.includes('leakage') || lower.includes('stage 2')) {
-			return "Hello Officer Daniels. Yes, I'm ready. Thank you for following up on my identity theft case.";
+		if (lower.includes('stage 2') || lower.includes('leakage') || (history.length > 0 && isStage2)) {
+			return "Hello Officer Daniels. Yes, I'm ready. Thank you for following up on my case.";
 		}
-		return "Hello? Officer Daniels? Yes, thank you for taking my report. I'm Jordan Hale. Citibank called to say an account was opened in my name and used to purchase firearms, and I don't know what to do.";
+		return "Hello? Officer Daniels? Yes, thank you for taking my call. I'm Jordan Hale. Citibank called to say an account was opened in my name and used to buy guns, and I don't know what to do.";
 	}
 
-	if (lower.includes('your name') || lower.includes('full name') || lower.includes('legal name') || lower.includes('who am i speaking')) {
-		return "My full legal name is Jordan Hale. J-O-R-D-A-N H-A-L-E.";
+	// ==================== STAGE 2: IDENTITY THEFT LEAKAGE ====================
+	if (isStage2) {
+		// 1. Know valid ID strictly required?
+		if (lower.includes('valid id') || (lower.includes('know') && lower.includes('required') && lower.includes('id'))) {
+			return "No, I didn't actually know that.";
+		}
+
+		// 2. Card issued in New York jurisdiction?
+		if (lower.includes('new york') || lower.includes('jurisdiction') || lower.includes('issued in ny')) {
+			return "Yes, Citibank told me the card was issued in the New York jurisdiction.";
+		}
+
+		// 3. US official documents (Driver's License / SSN) required?
+		if ((lower.includes('official document') || lower.includes('driver') || lower.includes('ssn') || lower.includes('social security')) && (lower.includes('require') || lower.includes('needed'))) {
+			return "Yes, I understand official documents like a Driver's License or Social Security Number are required.";
+		}
+
+		// 4. No-boundary concept (checked before leakage conclusion)
+		if (lower.includes('boundary') || lower.includes('geographic') || lower.includes('time boundary')) {
+			return "So once it's out there, it could be used anywhere, at any time?";
+		}
+
+		// 5. Leakage conclusion (information copied rather than stolen)
+		if (lower.includes('copied') || (lower.includes('rather than') && lower.includes('stolen')) || lower.includes('leakage conclusion')) {
+			return "So someone copied my information somewhere rather than stealing my physical card?";
+		}
+
+		// 6. Physical driver's license still in wallet?
+		if ((lower.includes('hold') || lower.includes('keep') || lower.includes('still have') || lower.includes('in your wallet')) && (lower.includes('physical') || lower.includes('license') || lower.includes('id') || lower.includes('driver'))) {
+			return "Yes, I still hold my physical driver's license right here in my wallet.";
+		}
+
+		// 7. Suspected persons or places (Choice 1 - Nothing)
+		if (lower.includes('suspect') || lower.includes('where the leak') || lower.includes('suspected persons')) {
+			return "No, I have no idea. I really don't suspect anyone or any specific place.";
+		}
+
+		// 8. Lost documents question (Branch B - Never lost)
+		if (lower.includes('lost') && (lower.includes('document') || lower.includes('wallet') || lower.includes('card') || lower.includes('ever'))) {
+			return "No, I have never lost any documents.";
+		}
+
+		// 9. Other document usage (Branch C - rental car)
+		if (lower.includes('used elsewhere') || lower.includes('rental') || lower.includes('photocopy') || lower.includes('hotel') || lower.includes('other document')) {
+			return "Yes, I rented a car last month and the rental counter made a photocopy of my driver's license.";
+		}
+
+		// 10. Four SOP points (Organization, Reason, Signature, Date)
+		if (lower.includes('four point') || lower.includes('organization') || lower.includes('reason, signature') || lower.includes('four required')) {
+			return "Understood. The name of the organization, the specific reason, my signature, and the date.";
+		}
+
+		// 11. Signature of Purpose definition
+		if (lower.includes('signature of purpose') || lower.includes('sop definition') || lower.includes('what is sop') || lower.includes('sop standard')) {
+			return "I understand. How exactly should I write the Signature of Purpose across a document copy?";
+		}
+
+		// 12. Blaming conclusion ("haven't taken good care of your own identity information...")
+		if (lower.includes('good care') || lower.includes('blame') || lower.includes('no wonder') || lower.includes('fault')) {
+			return "I understand, officer. I see what you mean, and I'll definitely be much more careful with my documents from now on.";
+		}
+
+		// 13. Final reminder to comply with SOP
+		if (lower.includes('future') || lower.includes('comply') || lower.includes('remember to') || lower.includes('final reminder')) {
+			return "Yes, Officer Daniels. I will strictly follow the Signature of Purpose for every document copy going forward.";
+		}
+
+		// 14. Closing the call
+		if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('conclude') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye')) {
+			return "Thank you so much for explaining this, Officer Daniels. Goodbye.";
+		}
+
+		return "Yes, Officer Daniels. What else do you need to trace how my information leaked?";
 	}
 
-	if (lower.includes('spell') || (lower.includes('jordan') && lower.includes('hale') && lower.includes('correct'))) {
-		return "Yes, that's correct, Jordan Hale.";
+	// ==================== STAGE 1: IDENTITY THEFT INTAKE ====================
+
+	// 1. Specific Credit Card questions first to avoid generic keyword collisions:
+	// Q1: Card number / last four
+	if (lower.includes('card number') || lower.includes('last four') || lower.includes('last 4') || lower.includes('digits') || lower.includes('account number')) {
+		return "I only know the last four digits Citibank told me, which are 4471.";
 	}
 
-	if (lower.includes('did you apply') || lower.includes('did you open') || lower.includes('authorized') || lower.includes('buy the') || lower.includes('buy any gun') || lower.includes('purchase')) {
-		return "No, absolutely not. I did not apply for that Citibank credit card, and I definitely did not purchase those firearms.";
+	// Q2: When and where application was made
+	if ((lower.includes('when') && (lower.includes('where') || lower.includes('applied') || lower.includes('application'))) || lower.includes('where was the application') || lower.includes('when was it applied')) {
+		return "I don't know. Citibank didn't tell me when or where the application was made.";
 	}
 
-	if (lower.includes('receive a call') || lower.includes('citibank contact') || lower.includes('citibank call') || lower.includes('first fact') || lower.includes('opened in your name')) {
-		return "Yes, Citibank called me directly to alert me about the card opened in my name.";
-	}
-
-	if (lower.includes('card number') || lower.includes('last four') || lower.includes('digits') || lower.includes('account number')) {
-		return "The only thing Citibank gave me was the last four digits: 4471.";
-	}
-
-	if (lower.includes('when') && (lower.includes('applied') || lower.includes('application') || lower.includes('where'))) {
-		return "I don't know. Citibank didn't tell me when or where the application was submitted.";
-	}
-
-	if (lower.includes('branch') || lower.includes('location')) {
+	// Q3: Which branch
+	if (lower.includes('branch') || lower.includes('location of the bank')) {
 		return "I don't know which branch issued the card.";
 	}
 
-	if (lower.includes('website') || lower.includes('online store') || lower.includes('site')) {
-		return "I don't know which website was used to make the purchase.";
+	// Q4: Which website (must be checked before generic firearm mention)
+	if (lower.includes('website') || lower.includes('online store') || lower.includes('merchant site') || lower.includes('which site')) {
+		return "I don't know which website was used.";
 	}
 
-	if (lower.includes('amount') || lower.includes('dollar') || lower.includes('cost') || lower.includes('how much') || lower.includes('total') || lower.includes('$')) {
-		return "Citibank told me the transactions for the firearms totaled around $3,200, though I don't have the exact receipt.";
+	// Q5: Transaction amount
+	if (lower.includes('amount') || lower.includes('dollar') || lower.includes('cost') || lower.includes('how much') || lower.includes('total') || lower.includes('price') || lower.includes('$')) {
+		return "Citibank mentioned the transaction amount was around $3,200, but I am not certain.";
 	}
 
-	if (lower.includes('reference') || lower.includes('case number') || lower.includes('citibank reference') || lower.includes('number')) {
-		return "Yes, the Citibank representative gave me case reference number C-88-2041.";
+	// Q6: Case or reference number
+	if (lower.includes('reference') || lower.includes('case number') || lower.includes('reference number') || lower.includes('citibank case')) {
+		return "Yes, Citibank gave me reference number C-88-2041.";
 	}
 
-	if (lower.includes('other detail') || lower.includes('anything else') || lower.includes('any other') || lower.includes('notice anything')) {
-		return "Actually yes, I checked my credit report earlier today and saw an unfamiliar hard inquiry from a lender I've never applied with.";
+	// 2. Full legal name
+	if ((lower.includes('name') && (lower.includes('what is') || lower.includes('state') || lower.includes('give') || lower.includes('tell me') || lower.includes('full') || lower.includes('legal'))) || lower.includes('who am i speaking') || (lower.includes('for the record') && lower.includes('name'))) {
+		return "My full legal name is Jordan Hale.";
 	}
 
-	if (lower.includes('identity theft') || lower.includes('summary') || lower.includes('classify') || lower.includes('understand')) {
-		return "Yes, Officer Daniels, I understand completely. It's classified as Identity Theft. What should my next step be?";
+	// Confirming spelling
+	if (lower.includes('spell') || (lower.includes('jordan') && lower.includes('hale') && (lower.includes('correct') || lower.includes('right')))) {
+		return "Yes, that's correct: J-O-R-D-A-N H-A-L-E.";
 	}
 
-	if (lower.includes('physical') || lower.includes('driver') || lower.includes('license') || lower.includes('ssn') || lower.includes('wallet')) {
-		return "Yes, I still hold my physical driver's license in my wallet. About six months ago I misplaced my wallet on the subway, but I filed a transit police report.";
+	// 3. Did not apply for card and did not buy guns (checked before general fact checks)
+	if (lower.includes('did you apply') || lower.includes('did you open') || lower.includes('did you purchase') || lower.includes('did you buy') || lower.includes('authorize') || lower.includes('fourth fact') || lower.includes('fact four') || lower.includes('fact 4')) {
+		return "No, I did not apply for the card and I definitely did not buy the guns.";
 	}
 
-	if (lower.includes('signature of purpose') || lower.includes('sop') || lower.includes('photocopy')) {
-		return "I understand the Signature of Purpose now: write who it's for, the date, and the specific reason across any document copy.";
+	// 4. Fact 1: Received phone call from Citibank
+	if ((lower.includes('citibank') && (lower.includes('call') || lower.includes('contact') || lower.includes('alert'))) || lower.includes('first fact') || lower.includes('fact one') || lower.includes('fact 1')) {
+		return "Yes, Citibank called me directly to alert me about the card opened in my name.";
 	}
 
-	if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('intake is done') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye')) {
+	// 5. Fact 2: Credit card account exists under name
+	if ((lower.includes('account') && (lower.includes('exist') || lower.includes('under your name') || lower.includes('opened') || lower.includes('there is'))) || lower.includes('second fact') || lower.includes('fact two') || lower.includes('fact 2') || (lower.includes('card') && lower.includes('opened in your name'))) {
+		return "Yes, they confirmed a credit card account does exist under my name.";
+	}
+
+	// 6. Fact 3: Four firearms bought online
+	if (lower.includes('firearm') || lower.includes('four gun') || lower.includes('4 gun') || lower.includes('guns') || lower.includes('third fact') || lower.includes('fact three') || lower.includes('fact 3')) {
+		return "Yes, they said four firearms were purchased online using that account.";
+	}
+
+	// 7. Other details / credit report inquiry
+	if (lower.includes('other detail') || lower.includes('anything else') || lower.includes('any other') || lower.includes('notice anything') || lower.includes('add anything')) {
+		return "Actually yes, I also noticed a hard inquiry on my credit report from a lender I do not recognize.";
+	}
+
+	// 8. Plain-language summary & classification confirmation
+	if (lower.includes('identity theft') || lower.includes('summary') || lower.includes('classify') || lower.includes('understand this')) {
+		return "Yes, Officer Daniels, I understand completely. It is an Identity Theft report. What should my next step be?";
+	}
+
+	// 9. Closing the call / goodbye
+	if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('intake is done') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye') || lower.includes('wrap up')) {
 		return "Thank you so much for your help and taking my report, Officer Daniels. Goodbye.";
 	}
 
-	return "Yes Officer Daniels, I'm listening. Could you let me know what detail you need for the report?";
+	// Default fallback in character
+	return "Yes Officer Daniels, I'm listening. Could you let me know what detail you need next for the report?";
 };
 
 /**
