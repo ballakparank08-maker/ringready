@@ -1,6 +1,7 @@
 import { Link } from 'react-router';
 import { ArrowUpRight } from 'lucide-react';
 import { SCENARIOS } from '@/data/scenarios';
+import { getCallerVoiceByName } from '@/data/voices';
 
 const DIFFICULTY_STYLES: Record<string, string> = {
 	Easy: 'text-primary border-primary/50',
@@ -16,20 +17,21 @@ export function ScenarioGrid() {
 					<div>
 						<p className="flex items-center gap-3 font-mono text-[11px] tracking-[0.35em] text-primary uppercase">
 							<span className="h-px w-8 bg-primary/60" />
-							Studio — Scenarios
+							Studio — Scenarios & AI Voices
 						</p>
 						<h2 className="mt-5 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
 							Pick your <span className="text-gold-leaf italic">call.</span>
 						</h2>
 					</div>
 					<p className="max-w-sm font-sans text-base leading-relaxed text-muted-foreground">
-						Each scenario puts a different character on the line, with a goal to reach before you hang up.
+						Practice with 4 distinct caller voices across different genders and delivery styles — from an anxious citizen to a demanding executive or panicked mother.
 					</p>
 				</div>
 
 				<div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 					{SCENARIOS.map((scenario) => {
 						const Icon = scenario.icon;
+						const voice = getCallerVoiceByName(scenario.personaName);
 
 						return (
 							<Link
@@ -43,10 +45,19 @@ export function ScenarioGrid() {
 									</span>
 									<span className="font-mono text-xs text-muted-foreground tabular-nums">{scenario.index}</span>
 								</div>
-								<h3 className="mt-6 font-display text-2xl font-semibold tracking-tight">
+								<h3 className="mt-5 font-display text-2xl font-semibold tracking-tight">
 									{scenario.title}
 								</h3>
-								<p className="mt-3 flex-1 font-sans text-base leading-relaxed text-muted-foreground">
+
+								{/* Persona & Voice Style Badge */}
+								<div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+									<span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-wider uppercase ${voice.badgeClass}`}>
+										<span className="font-bold capitalize">{voice.gender}</span> · {voice.name}
+									</span>
+									<span className="font-mono text-[10px] text-muted-foreground">⚡ {voice.style}</span>
+								</div>
+
+								<p className="mt-3 flex-1 font-sans text-sm leading-relaxed text-muted-foreground">
 									{scenario.tagline}
 								</p>
 								<div className="mt-6 flex items-center justify-between border-t border-border pt-4">

@@ -16,6 +16,8 @@ import {
 import { AssistantError, clearChatHistory, sendMessage } from '@/api/integrated-ai-api';
 import type { ChatMessage } from '@/api/integrated-ai-api';
 import type { Scenario } from '@/data/scenarios';
+import { CALLER_VOICES, getCallerVoiceByName } from '@/data/voices';
+import type { CallerVoiceProfile } from '@/data/voices';
 import pb from '@/lib/pocketbase-client';
 import {
 	createRecognizer,
@@ -72,6 +74,12 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 	const [isRecording, setIsRecording] = useState(false);
 	const [recordingSeconds, setRecordingSeconds] = useState(0);
 	const [recordingAudioLevel, setRecordingAudioLevel] = useState(0);
+
+	const [activeVoice, setActiveVoice] = useState<CallerVoiceProfile>(() =>
+		getCallerVoiceByName(scenario.personaName)
+	);
+	const activeVoiceRef = useRef(activeVoice);
+	activeVoiceRef.current = activeVoice;
 
 	const mountedRef = useRef(true);
 	const recognitionRef = useRef<RecognizerHandle | null>(null);
@@ -217,7 +225,11 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 
 			if (stateRef.current.speakerOn && isSpeechSynthesisSupported()) {
 				setTurnState('speaking');
-				await speak(answer.content);
+				await speak(answer.content, {
+					pitch: activeVoiceRef.current.pitch,
+					rate: activeVoiceRef.current.rate,
+					gender: activeVoiceRef.current.gender,
+				});
 
 				if (!mountedRef.current || stateRef.current.phase !== 'active') {
 					return;
@@ -458,11 +470,11 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 		}
 
 		if (turnState === 'thinking') {
-			return `${scenario.personaName} is thinking…`;
+			return `${activeVoice.name} is thinking…`;
 		}
 
 		if (turnState === 'speaking') {
-			return `${scenario.personaName} is speaking`;
+			return `${activeVoice.name} is speaking`;
 		}
 
 		if (turnState === 'listening') {
@@ -546,6 +558,45 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 						<p className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">Coach’s tip</p>
 						<p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{scenario.tip}</p>
 					</div>
+					<div>
+						<p className="font-mono text-[10px] tracking-[0.25em] text-muted-foreground uppercase">AI Caller Voices (4)</p>
+						<div className="mt-2.5 space-y-2">
+							{CALLER_VOICES.map((v) => {
+								const isSelected = v.id === activeVoice.id;
+								return (
+									<button
+										key={v.id}
+										type="button"
+										onClick={() => {
+											setActiveVoice(v);
+											if (v.id === 'marcus-vance' && scenario.id !== 'identity-theft-marcus') {
+												navigate('/call/identity-theft-marcus');
+											} else if (v.id === 'elena-rodriguez' && scenario.id !== 'identity-theft-elena') {
+												navigate('/call/identity-theft-elena');
+											} else if (v.id === 'brenda-kowalski' && scenario.id !== 'identity-theft-brenda') {
+												navigate('/call/identity-theft-brenda');
+											} else if (v.id === 'jordan-hale' && scenario.id !== 'identity-theft-intake' && scenario.id !== 'identity-theft-deepening') {
+												navigate('/call/identity-theft-intake');
+											}
+										}}
+										className={`w-full rounded border p-2 text-left transition-all ${
+											isSelected
+												? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary/40'
+												: 'border-border bg-card/40 text-muted-foreground hover:border-border/80 hover:text-foreground'
+										}`}
+									>
+										<div className="flex items-center justify-between">
+											<span className="font-display text-xs font-semibold">{v.name}</span>
+											<span className={`rounded-full border px-1.5 py-0.5 font-mono text-[9px] uppercase ${v.badgeClass}`}>
+												{v.gender}
+											</span>
+										</div>
+										<p className="mt-1 font-mono text-[10px] text-muted-foreground">{v.style}</p>
+									</button>
+								);
+							})}
+						</div>
+					</div>
 				</aside>
 
 				<main className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-5 py-10">
@@ -561,6 +612,51 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 						/>
 					) : (
 						<div className="relative flex w-full max-w-xl flex-col items-center">
+							{/* AI Voice & Persona Bar */}
+							<div className="mb-6 flex flex-col items-center gap-2">
+								<div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+									<span className="mr-0.5 font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+										AI Voice:
+									</span>
+									{CALLER_VOICES.map((v) => {
+										const isCurrent = v.id === activeVoice.id;
+										return (
+											<button
+												key={v.id}
+												type="button"
+												onClick={() => {
+													setActiveVoice(v);
+													if (v.id === 'marcus-vance' && scenario.id !== 'identity-theft-marcus') {
+														navigate('/call/identity-theft-marcus');
+													} else if (v.id === 'elena-rodriguez' && scenario.id !== 'identity-theft-elena') {
+														navigate('/call/identity-theft-elena');
+													} else if (v.id === 'brenda-kowalski' && scenario.id !== 'identity-theft-brenda') {
+														navigate('/call/identity-theft-brenda');
+													} else if (v.id === 'jordan-hale' && scenario.id !== 'identity-theft-intake' && scenario.id !== 'identity-theft-deepening') {
+														navigate('/call/identity-theft-intake');
+													}
+												}}
+												title={`${v.name} (${v.gender}) — ${v.style}: ${v.description}`}
+												className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[11px] tracking-wider transition-all ${
+													isCurrent
+														? `${v.badgeClass} ring-1 ring-primary/80 font-bold shadow-sm`
+														: 'border-border bg-card/60 text-muted-foreground hover:border-primary/50 hover:text-foreground'
+												}`}
+											>
+												<span className="h-1.5 w-1.5 rounded-full bg-current" />
+												<span>{v.name}</span>
+												<span className="text-[9px] uppercase opacity-75">({v.gender})</span>
+											</button>
+										);
+									})}
+								</div>
+								<div className="flex flex-wrap items-center justify-center gap-2 font-mono text-[11px] text-muted-foreground">
+									<span>Delivery: <strong className="font-semibold text-foreground">{activeVoice.style}</strong></span>
+									<span className="hidden sm:inline">·</span>
+									<span className="hidden sm:inline">{activeVoice.tagline}</span>
+								</div>
+							</div>
+
 							{/* persona avatar with pulse rings */}
 							<div className="relative">
 								{voiceActive ? (
@@ -572,11 +668,11 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 								<span
 									className={`relative flex h-28 w-28 items-center justify-center rounded-full font-display text-3xl font-bold transition-colors duration-300 ${
 										turnState === 'speaking'
-											? 'bg-primary text-primary-foreground'
+											? 'bg-primary text-primary-foreground shadow-gold'
 											: 'bg-secondary text-primary'
 									}`}
 								>
-									{initialsOf(scenario.personaName)}
+									{activeVoice.avatarInitial || initialsOf(activeVoice.name)}
 								</span>
 							</div>
 
@@ -695,7 +791,7 @@ export function CallScreen({ scenario }: { scenario: Scenario }) {
 								messages.map((message, index) => (
 									<p key={index} className="mx-auto mb-2.5 max-w-2xl text-sm leading-relaxed last:mb-0">
 										<span className="font-mono text-[10px] tracking-widest text-primary uppercase">
-											{message.role === 'assistant' ? `${scenario.personaName}: ` : 'You: '}
+											{message.role === 'assistant' ? `${activeVoice.name}: ` : 'You: '}
 										</span>
 										<span className="text-muted-foreground">{message.content || '…'}</span>
 									</p>

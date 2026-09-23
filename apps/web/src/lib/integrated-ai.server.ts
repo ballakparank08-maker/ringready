@@ -424,11 +424,23 @@ const generateSimulatedReply = (
 		|| lower;
 
 	const isStage2 = openingBrief.includes('stage 2') || openingBrief.includes('leakage');
+	const isMarcus = openingBrief.includes('marcus') || lower.includes('marcus');
+	const isElena = openingBrief.includes('elena') || lower.includes('elena');
+	const isBrenda = openingBrief.includes('brenda') || lower.includes('brenda');
 
 	// Initial call greeting / hidden brief
 	if (history.length === 0 || lower.includes('practice call brief') || lower.includes('never read this aloud')) {
 		if (lower.includes('stage 2') || lower.includes('leakage') || (history.length > 0 && isStage2)) {
 			return "Hello Officer TM. Yes, I'm ready. Thank you for following up on my case.";
+		}
+		if (isMarcus) {
+			return "Officer TM, Marcus Vance here. Citibank alerted me someone opened an unauthorized account in my name and bought firearms online. I need this fraudulent account shut down and logged immediately.";
+		}
+		if (isElena) {
+			return "Officer TM? Oh thank goodness you answered... I'm Elena Rodriguez. Citibank just called saying someone opened a credit card in my name and bought four guns! I'm shaking, please tell me what I should do.";
+		}
+		if (isBrenda) {
+			return "Hello? Is this Officer TM with the NYPD? Let me make sure I write your name down. Good. I'm Brenda Kowalski. Citibank informed me someone opened a card in my name and purchased firearms. I want an official police record made right this minute.";
 		}
 		return "Hello? Officer TM? Yes, thank you for taking my call. I'm Jordan Hale. Citibank called to say an account was opened in my name and used to buy guns, and I don't know what to do.";
 	}
@@ -510,14 +522,20 @@ const generateSimulatedReply = (
 
 	// ==================== STAGE 1: IDENTITY THEFT INTAKE ====================
 
-	// 1. Specific Credit Card questions first to avoid generic keyword collisions:
+	// 1. Specific Credit Card questions:
 	// Q1: Card number / full number / digits
 	if (lower.includes('card number') || lower.includes('last four') || lower.includes('last 4') || lower.includes('digits') || lower.includes('account number') || lower.includes('what is the card') || lower.includes('credit card number')) {
+		if (isMarcus) return "The full fraudulent card number is 5412 7521 8834 4471. Write that down.";
+		if (isElena) return "Citibank told me the card number is 5412 7521 8834 4471... oh God, I've never even held a Citibank card.";
+		if (isBrenda) return "I made the representative read every single digit to me: 5412 7521 8834 4471.";
 		return "The full credit card number on the fraudulent account is 5412 7521 8834 4471.";
 	}
 
 	// Q2: When and where application was made
 	if ((lower.includes('when') && lower.includes('where')) || (lower.includes('when') && (lower.includes('applied') || lower.includes('application'))) || (lower.includes('where') && (lower.includes('applied') || lower.includes('application')))) {
+		if (isMarcus) return "Citibank tracked the application to September 12th, 2026, submitted online from an IP in Queens, New York.";
+		if (isElena) return "They said the application was filed online on September 12th, 2026, from an IP address in Queens, New York.";
+		if (isBrenda) return "Citibank claims it was applied for online on September 12th, 2026, originating from an IP in Queens, New York.";
 		return "Citibank told me the application was submitted online on September 12th, 2026, from an IP address in Queens, New York.";
 	}
 	if (lower.includes('when was') || lower.includes('what date') || (lower.includes('date') && lower.includes('applied')) || (lower.includes('time') && lower.includes('applied'))) {
@@ -529,32 +547,53 @@ const generateSimulatedReply = (
 
 	// Q3: Which branch
 	if (lower.includes('branch') || lower.includes('location of the bank') || lower.includes('which bank branch') || lower.includes('issuing branch')) {
+		if (isMarcus) return "It was processed through Citibank's Midtown Manhattan branch on 53rd Street. Absolute security breakdown.";
+		if (isElena) return "They told me it was issued by their Midtown Manhattan branch on 53rd Street.";
+		if (isBrenda) return "Citibank claimed it was authorized through their Midtown Manhattan branch on 53rd Street. Appalling oversight.";
 		return "Citibank said the card account was processed and issued through their Midtown Manhattan branch on 53rd Street.";
 	}
 
-	// Q4: Which website (must be checked before generic firearm mention)
+	// Q4: Which website
 	if (lower.includes('website') || lower.includes('online store') || lower.includes('merchant site') || lower.includes('which site') || lower.includes('what website')) {
+		if (isMarcus) return "The charges were executed on GunBroker.com. Four weapons.";
+		if (isElena) return "The representative said the guns were bought on a website called GunBroker.com... guns, Officer TM! Why guns?";
+		if (isBrenda) return "The representative stated the firearms purchase was made on a website called GunBroker.com.";
 		return "Citibank told me the unauthorized firearm purchases were made on the website GunBroker.com.";
 	}
 
 	// Q5: Transaction amount
 	if (lower.includes('amount') || lower.includes('dollar') || lower.includes('cost') || lower.includes('how much') || lower.includes('total') || lower.includes('price') || lower.includes('$')) {
+		if (isMarcus) return "The fraudulent transaction total charged was exactly $3,248.50.";
+		if (isElena) return "They told me the charges were $3,248.50... that is a terrifying amount of money for firearms.";
+		if (isBrenda) return "The exact fraudulent charge was $3,248.50. Every single penny must be struck from my credit.";
 		return "The total fraudulent transaction amount charged for the four firearms was exactly $3,248.50.";
 	}
 
 	// Q6: Case or reference number
 	if (lower.includes('reference') || lower.includes('case number') || lower.includes('reference number') || lower.includes('citibank case')) {
+		if (isMarcus) return "Citibank assigned it fraud reference C-88-2041.";
+		if (isElena) return "Yes, I wrote it down with shaking hands: C-88-2041.";
+		if (isBrenda) return "I have the Citibank reference right here in my notebook: C-88-2041.";
 		return "Yes, the Citibank fraud investigation case reference number is C-88-2041.";
 	}
 
 	// Demographic & contact details if asked
 	if (lower.includes('date of birth') || lower.includes('dob') || lower.includes('when were you born') || lower.includes('birthday')) {
+		if (isBrenda) return "My date of birth is November 3rd, 1953.";
+		if (isMarcus) return "My date of birth is July 22nd, 1982.";
+		if (isElena) return "My date of birth is March 14th, 1991.";
 		return "My date of birth is April 15th, 1988.";
 	}
 	if (lower.includes('address') || lower.includes('where do you live') || lower.includes('home address') || lower.includes('residence')) {
+		if (isMarcus) return "My residence is 150 West 56th Street, Penthouse B, Manhattan, New York 10019.";
+		if (isElena) return "My address is 312 Jackson Avenue, Apartment 2, Bronx, New York 10454.";
+		if (isBrenda) return "My home address is 88 Bay 19th Street, Brooklyn, New York 11214.";
 		return "My home address is 742 Evergreen Terrace, Apartment 4B, Brooklyn, New York 11201.";
 	}
 	if (lower.includes('phone') || lower.includes('telephone') || lower.includes('contact number') || lower.includes('mobile')) {
+		if (isMarcus) return "My direct cell is 212-555-0188.";
+		if (isElena) return "My cell phone is 646-555-0142.";
+		if (isBrenda) return "My telephone number is 718-555-0199.";
 		return "My phone number is 917-555-0194.";
 	}
 	if (lower.includes('social security') || lower.includes('ssn')) {
@@ -563,50 +602,80 @@ const generateSimulatedReply = (
 
 	// 2. Full legal name
 	if ((lower.includes('name') && (lower.includes('what is') || lower.includes('state') || lower.includes('give') || lower.includes('tell me') || lower.includes('full') || lower.includes('legal'))) || lower.includes('who am i speaking') || (lower.includes('for the record') && lower.includes('name'))) {
+		if (isMarcus) return "My legal name is Marcus Vance.";
+		if (isElena) return "My full legal name is Elena Rodriguez.";
+		if (isBrenda) return "My legal name is Brenda Kowalski.";
 		return "My full legal name is Jordan Hale.";
 	}
 
 	// Confirming spelling
-	if (lower.includes('spell') || (lower.includes('jordan') && lower.includes('hale') && (lower.includes('correct') || lower.includes('right')))) {
+	if (lower.includes('spell') || (lower.includes('correct') || lower.includes('right'))) {
+		if (isMarcus) return "That's M-A-R-C-U-S V-A-N-C-E.";
+		if (isElena) return "Yes, it is spelled E-L-E-N-A R-O-D-R-I-G-U-E-Z.";
+		if (isBrenda) return "That is B-R-E-N-D-A K-O-W-A-L-S-K-I.";
 		return "Yes, that's correct: J-O-R-D-A-N H-A-L-E.";
 	}
 
-	// 3. Did not apply for card and did not buy guns (checked before general fact checks)
+	// 3. Did not apply for card and did not buy guns
 	if (lower.includes('did you apply') || lower.includes('did you open') || lower.includes('did you purchase') || lower.includes('did you buy') || lower.includes('authorize') || lower.includes('fourth fact') || lower.includes('fact four') || lower.includes('fact 4')) {
+		if (isMarcus) return "Obviously I did not apply for this card, and I certainly did not purchase weapons.";
+		if (isElena) return "No, no, absolutely not! I never applied for any card, and I would never in my life buy firearms.";
+		if (isBrenda) return "Of course not! I never applied for that card, and I've never touched a firearm in my seventy-two years.";
 		return "No, I did not apply for the card and I definitely did not buy the guns.";
 	}
 
 	// 4. Fact 1: Received phone call from Citibank
 	if ((lower.includes('citibank') && (lower.includes('call') || lower.includes('contact') || lower.includes('alert'))) || lower.includes('first fact') || lower.includes('fact one') || lower.includes('fact 1')) {
+		if (isMarcus) return "Yes, their executive fraud team called my direct line to notify me.";
+		if (isElena) return "Yes... Citibank called me directly about fifteen minutes ago. I was in complete shock.";
+		if (isBrenda) return "Yes, Citibank phoned me. I gave the representative a piece of my mind for letting this happen.";
 		return "Yes, Citibank called me directly to alert me about the card opened in my name.";
 	}
 
 	// 5. Fact 2: Credit card account exists under name
 	if ((lower.includes('account') && (lower.includes('exist') || lower.includes('under your name') || lower.includes('opened') || lower.includes('there is'))) || lower.includes('second fact') || lower.includes('fact two') || lower.includes('fact 2') || (lower.includes('card') && lower.includes('opened in your name'))) {
+		if (isMarcus) return "Yes, an unauthorized credit card account exists under my identity.";
+		if (isElena) return "Yes, they told me a credit card account exists under my name that I never opened.";
+		if (isBrenda) return "Yes, they claim a credit card account exists under my name. Pure negligence.";
 		return "Yes, they confirmed a credit card account does exist under my name.";
 	}
 
 	// 6. Fact 3: Four firearms bought online
 	if (lower.includes('firearm') || lower.includes('four gun') || lower.includes('4 gun') || lower.includes('guns') || lower.includes('third fact') || lower.includes('fact three') || lower.includes('fact 3')) {
+		if (isMarcus) return "Yes, Citibank confirmed four firearms were charged online to that card.";
+		if (isElena) return "Yes, they said someone bought four guns online... Officer TM, guns! Why would anyone buy guns in my name?";
+		if (isBrenda) return "Yes, four firearms. How on earth does a bank approve gun purchases without checking identification?";
 		return "Yes, they said four firearms were purchased online using that account.";
 	}
 
 	// 7. Other details / credit report inquiry
 	if (lower.includes('other detail') || lower.includes('anything else') || lower.includes('any other') || lower.includes('notice anything') || lower.includes('add anything')) {
+		if (isMarcus) return "I also checked my business and personal reports; there's an unauthorized hard inquiry from Apex Lending Partners on September 14th.";
+		if (isElena) return "Yes, Officer TM, I logged into my credit app and saw a hard inquiry from Apex Lending Partners on September 14th that I never did!";
+		if (isBrenda) return "I certainly did notice something else. An unauthorized inquiry from Apex Lending Partners on September 14th. Put that in your report.";
 		return "Actually yes, I also noticed a hard inquiry on my credit report from a lender I do not recognize.";
 	}
 
 	// 8. Plain-language summary & classification confirmation
 	if (lower.includes('identity theft') || lower.includes('summary') || lower.includes('classify') || lower.includes('understand this')) {
+		if (isMarcus) return "Yes, Officer TM, I understand. Identity Theft report. Now what is the NYPD's timeline for an incident report number?";
+		if (isElena) return "Yes, Officer TM, I understand. An Identity Theft report. Please, what do I need to do to keep my family safe?";
+		if (isBrenda) return "Yes, Officer TM, I understand. Identity Theft report. I expect a formal case number for my records.";
 		return "Yes, Officer TM, I understand completely. It is an Identity Theft report. What should my next step be?";
 	}
 
 	// 9. Closing the call / goodbye
 	if (lower.includes('goodbye') || lower.includes('complete') || lower.includes('intake is done') || lower.includes('have a good') || lower.includes('take care') || lower.includes('bye') || lower.includes('wrap up')) {
+		if (isMarcus) return "Understood. Thank you Officer TM. Keep me updated on the case. Goodbye.";
+		if (isElena) return "Thank you so much for being so patient and kind with me, Officer TM. God bless you. Goodbye.";
+		if (isBrenda) return "Thank you Officer TM. Make sure Citibank is investigated for this. Good day.";
 		return "Thank you so much for your help and taking my report, Officer TM. Goodbye.";
 	}
 
 	// Default fallback in character
+	if (isMarcus) return "Yes Officer TM, I'm listening. What specific intake detail do you need next?";
+	if (isElena) return "Yes Officer TM, I'm listening. Please let me know what detail you need next.";
+	if (isBrenda) return "Yes Officer TM, I have my pen ready. What is the next question for your log?";
 	return "Yes Officer TM, I'm listening. Could you let me know what detail you need next for the report?";
 };
 

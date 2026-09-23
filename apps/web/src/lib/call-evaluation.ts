@@ -210,20 +210,32 @@ function evaluateStage1(
 			id: 'stg1_name_spelling',
 			category: 'Citizen Identification',
 			label: 'Verify Name Spelling',
-			description: 'Spell back or confirm the spelling of Jordan Hale (J-O-R-D-A-N H-A-L-E).',
+			description: 'Spell back or confirm the spelling of the citizen’s name (e.g., J-O-R-D-A-N H-A-L-E, M-A-R-C-U-S V-A-N-C-E, E-L-E-N-A R-O-D-R-I-G-U-E-Z, or B-R-E-N-D-A K-O-W-A-L-S-K-I).',
 			completed: Boolean(
 				findEvidence(
 					(t) =>
 						t.includes('spell') ||
 						(t.includes('jordan') && t.includes('hale')) ||
-						t.includes('h-a-l-e')
+						(t.includes('marcus') && t.includes('vance')) ||
+						(t.includes('elena') && t.includes('rodriguez')) ||
+						(t.includes('brenda') && t.includes('kowalski')) ||
+						t.includes('h-a-l-e') ||
+						t.includes('v-a-n-c-e') ||
+						t.includes('r-o-d-r-i-g-u-e-z') ||
+						t.includes('k-o-w-a-l-s-k-i')
 				)
 			),
 			evidence: findEvidence(
 				(t) =>
 					t.includes('spell') ||
 					(t.includes('jordan') && t.includes('hale')) ||
-					t.includes('h-a-l-e')
+					(t.includes('marcus') && t.includes('vance')) ||
+					(t.includes('elena') && t.includes('rodriguez')) ||
+					(t.includes('brenda') && t.includes('kowalski')) ||
+					t.includes('h-a-l-e') ||
+					t.includes('v-a-n-c-e') ||
+					t.includes('r-o-d-r-i-g-u-e-z') ||
+					t.includes('k-o-w-a-l-s-k-i')
 			),
 			recommendation: 'Confirm the exact letter-by-letter spelling of the citizen’s full name.',
 		},

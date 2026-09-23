@@ -110,6 +110,28 @@ const PREFERRED_VOICE_PATTERNS = [
 	/google uk english female/i,
 ];
 
+const FEMALE_VOICE_PATTERNS = [
+	/microsoft (aria|jenny|michelle|zira|susan|hazel|sara)/i,
+	/google uk english female/i,
+	/google .*female/i,
+	/samantha/i,
+	/victoria/i,
+	/karen/i,
+	/fiona/i,
+	/serena/i,
+];
+
+const MALE_VOICE_PATTERNS = [
+	/microsoft (david|guy|mark|george|richard|ryan)/i,
+	/google uk english male/i,
+	/google .*male/i,
+	/alex/i,
+	/daniel/i,
+	/fred/i,
+	/oliver/i,
+	/tom/i,
+];
+
 let voicesCache: SpeechSynthesisVoice[] = [];
 
 const refreshVoices = () => {
@@ -125,12 +147,24 @@ if (isSpeechSynthesisSupported()) {
 	window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
 }
 
-export const pickVoice = (): SpeechSynthesisVoice | null => {
+export const pickVoice = (gender?: 'male' | 'female' | 'neutral'): SpeechSynthesisVoice | null => {
 	if (voicesCache.length === 0) {
 		refreshVoices();
 	}
 
 	const english = voicesCache.filter(voice => voice.lang.toLowerCase().startsWith('en'));
+
+	if (gender === 'female') {
+		for (const pattern of FEMALE_VOICE_PATTERNS) {
+			const match = english.find(voice => pattern.test(voice.name));
+			if (match) return match;
+		}
+	} else if (gender === 'male') {
+		for (const pattern of MALE_VOICE_PATTERNS) {
+			const match = english.find(voice => pattern.test(voice.name));
+			if (match) return match;
+		}
+	}
 
 	for (const pattern of PREFERRED_VOICE_PATTERNS) {
 		const match = english.find(voice => pattern.test(voice.name));
@@ -144,7 +178,10 @@ export const pickVoice = (): SpeechSynthesisVoice | null => {
 };
 
 /** Speaks one reply aloud; resolves when the voice finishes (or fails). */
-export function speak(text: string, options: { rate?: number; pitch?: number } = {}): Promise<void> {
+export function speak(
+	text: string,
+	options: { rate?: number; pitch?: number; gender?: 'male' | 'female' | 'neutral' } = {}
+): Promise<void> {
 	return new Promise((resolve) => {
 		if (!isSpeechSynthesisSupported() || !text.trim()) {
 			resolve();
@@ -156,7 +193,7 @@ export function speak(text: string, options: { rate?: number; pitch?: number } =
 		synth.cancel();
 
 		const utterance = new SpeechSynthesisUtterance(text);
-		const voice = pickVoice();
+		const voice = pickVoice(options.gender);
 
 		if (voice) {
 			utterance.voice = voice;
