@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	:root {
+		/* Gatsby gold-luxury — onyx, ivory, and gold leaf */
+		--background: 40 6% 5%;
+		--foreground: 40 34% 92%;
+		--card: 40 5% 8%;
+		--card-foreground: 40 34% 92%;
+		--popover: 40 5% 7%;
+		--popover-foreground: 40 34% 92%;
+		--primary: 45 78% 55%;
+		--primary-foreground: 40 10% 6%;
+		--secondary: 40 5% 13%;
+		--secondary-foreground: 40 34% 92%;
+		--muted: 40 4% 12%;
+		--muted-foreground: 40 14% 62%;
+		--accent: 42 55% 22%;
+		--accent-foreground: 45 80% 62%;
+		--destructive: 4 70% 52%;
+		--destructive-foreground: 40 34% 96%;
+		--border: 44 34% 24%;
+		--input: 44 26% 20%;
+		--ring: 45 78% 55%;
+		--radius: 0.125rem;
+		--sidebar-background: 40 5% 7%;
+		--sidebar-foreground: 40 34% 92%;
+		--sidebar-primary: 45 78% 55%;
+		--sidebar-primary-foreground: 40 10% 6%;
+		--sidebar-accent: 42 55% 22%;
+		--sidebar-accent-foreground: 40 34% 92%;
+		--sidebar-border: 44 34% 24%;
+		--sidebar-ring: 45 78% 55%;
+	}
+
+	* {
+		@apply border-border;
+	}
+
+	body {
+		@apply bg-background font-sans text-foreground antialiased;
+		overflow-x: clip;
+	}
+
+	::selection {
+		background: hsl(var(--primary) / 0.32);
+		color: hsl(var(--foreground));
+	}
+}
+
+@layer utilities {
+	/* Gold leaf text gradient */
+	.text-gold-leaf {
+		background: linear-gradient(
+			180deg,
+			hsl(48 86% 70%) 0%,
+			hsl(44 74% 52%) 45%,
+			hsl(38 60% 38%) 100%
+		);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+
+	/* Thin double-rule Art Deco divider */
+	.rule-deco {
+		border-top: 1px solid hsl(var(--border));
+		border-bottom: 1px solid hsl(var(--border));
+		height: 5px;
+	}
+
+	/* Gold hairline frame */
+	.frame-gold {
+		box-shadow: inset 0 0 0 1px hsl(var(--primary) / 0.45);
+	}
+
+	/* Soft gold glow for elevated cards */
+	.shadow-gold {
+		box-shadow: 0 1.25rem 2.5rem -1rem hsl(45 78% 55% / 0.18), 0 0 0 1px hsl(var(--border));
+	}
+
+	.shadow-gold-deep {
+		box-shadow: 0 1.5rem 3rem -1rem hsl(40 6% 2% / 0.9), 0 0 0 1px hsl(var(--primary) / 0.22);
+	}
+
+	.text-balance {
+		text-wrap: balance;
+	}
+
+	/* Gold marker highlight under a key phrase */
+	.marker-underline {
+		background-image: linear-gradient(to top, hsl(45 78% 55% / 0.34) 30%, transparent 30%);
+	}
+
+	/* Art Deco sunburst corner ornament */
+	.deco-corner {
+		background-image:
+			linear-gradient(45deg, transparent 49%, hsl(var(--primary) / 0.5) 49% 51%, transparent 51%),
+			linear-gradient(-45deg, transparent 49%, hsl(var(--primary) / 0.5) 49% 51%, transparent 51%);
+	}
+
+	.animate-wave {
+		animation: wave-bar 1s ease-in-out infinite;
+	}
+
+	.animate-ring {
+		animation: ring-pulse 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+	}
+
+	.animate-fade-up {
+		animation: fade-up 0.7s ease-out both;
+	}
+
+	.animate-shimmer {
+		background: linear-gradient(
+			110deg,
+			hsl(44 74% 52%) 0%,
+			hsl(50 90% 72%) 45%,
+			hsl(44 74% 52%) 90%
+		);
+		background-size: 200% 100%;
+		animation: shimmer 3.5s linear infinite;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+}
+
+@keyframes wave-bar {
+	0%,
+	100% {
+		transform: scaleY(0.25);
+	}
+	50% {
+		transform: scaleY(1);
+	}
+}
+
+@keyframes ring-pulse {
+	0% {
+		transform: scale(1);
+		opacity: 0.5;
+	}
+	100% {
+		transform: scale(1.9);
+		opacity: 0;
+	}
+}
+
+@keyframes fade-up {
+	from {
+		opacity: 0;
+		transform: translateY(18px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes shimmer {
+	to {
+		background-position: -200% 0;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animate-wave,
+	.animate-ring,
+	.animate-fade-up,
+	.animate-shimmer {
+		animation: none;
+	}
+}

@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production builds & exports
+dist/
+build/
+app.tar.gz
+*.tar.gz
+*.zip
+
+# PocketBase binary & runtime state
+apps/pocketbase/pocketbase
+apps/pocketbase/pocketbase.exe
+apps/pocketbase/pb_data/*.db
+apps/pocketbase/pb_data/*.db-shm
+apps/pocketbase/pb_data/*.db-wal
+apps/pocketbase/pb_data/*.bak
+vault/temp/
+
+# Environment files with local secrets
+apps/web/.env
+.env
+.env.local
+.env.*.local
+*.log
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
